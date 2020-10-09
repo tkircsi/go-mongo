@@ -1,0 +1,22 @@
+version: '2.4'
+services:
+  mongo:
+    image: mongo:4.4.1
+    container_name: mongo-db
+    ports:
+      - '27017:27017'
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: # Read from host env
+      MONGO_INITDB_ROOT_PASSWORD: # Read from host env
+    volumes:
+      - type: volume
+        source: mongodbvolume
+        target: /data/db
+volumes:
+  mongodbvolume:
