@@ -40,7 +40,7 @@ func main() {
 
 	defer client.Disconnect(ctx)
 
-	batchLoad(ctx, client.Database("podcastsdb"))
+	batchLoad(client.Database("podcastsdb"))
 
 	// quickstartDatabase := client.Database("quickstart")
 	// podcastsCollection := quickstartDatabase.Collection("podcasts")
@@ -74,8 +74,12 @@ func main() {
 
 }
 
-func batchLoad(ctx context.Context, db *mongo.Database) {
+func batchLoad(db *mongo.Database) {
 
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	podcastsCollection := db.Collection("podcasts")
 	csvfile, err := os.Open("podcasts.csv")
 	if err != nil {
 		log.Fatal(err)
@@ -85,10 +89,10 @@ func batchLoad(ctx context.Context, db *mongo.Database) {
 	_, err = r.Read() // skip header row
 
 	const batchSize int = 1000
-	var podcasts []interface{}
 
 Loop:
 	for {
+		var podcasts []interface{}
 		for i := 0; i < batchSize; i++ {
 			row, err := r.Read()
 			if err == io.EOF {
@@ -103,7 +107,6 @@ Loop:
 			})
 			// fmt.Printf("Title: %s Author: %s\n", row[1], row[7])
 		}
-		podcastsCollection := db.Collection("podcasts")
 		podcastResult, err := podcastsCollection.InsertMany(ctx, podcasts)
 		if err != nil {
 			log.Fatal(err)
